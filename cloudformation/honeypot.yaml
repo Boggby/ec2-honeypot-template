@@ -2,13 +2,17 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: 'CloudFormation template for a simple honeypot in AWS'
 
 Parameters:
-  KeyName:
-    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
-    Type: AWS::EC2::KeyPair::KeyName
-    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  KeyPairName:
+    Type: String
+    Description: Name of the new EC2 KeyPair to be created
 
 Resources:
-  HoneypotSecurityGroup:
+  NewKeyPair:
+    Type: 'AWS::EC2::KeyPair'
+    Properties:
+      KeyName: !Ref KeyPairName
+
+  HpotSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: 'Security group for honeypot EC2 instance'
@@ -26,14 +30,14 @@ Resources:
           ToPort: 443
           CidrIp: 0.0.0.0/0
 
-  HoneypotInstance:
+  HpotInstance:
     Type: 'AWS::EC2::Instance'
     Properties:
       ImageId: ami-0aa7d40eeae50c9a9  # Ubuntu 22.04 LTS (HVM), SSD Volume Type in us-east-1
       InstanceType: t2.micro
-      KeyName: !Ref KeyName
+      KeyName: !Ref NewKeyPair
       SecurityGroupIds: 
-        - !Ref HoneypotSecurityGroup
+        - !Ref HpotSecurityGroup
       BlockDeviceMappings:
         - DeviceName: /dev/sda1
           Ebs:
@@ -61,12 +65,15 @@ Resources:
           sudo systemctl start sshd
       Tags:
         - Key: Name
-          Value: Honeypot
+          Value: Hpot-Shield
 
 Outputs:
-  HoneypotPublicIP:
+  HpotPublicIP:
     Description: 'Public IP address of the honeypot EC2 instance'
     Value: !GetAtt HoneypotInstance.PublicIp
-  HoneypotPublicDNS:
+  HpotPublicDNS:
     Description: 'Public DNS name of the honeypot EC2 instance'
     Value: !GetAtt HoneypotInstance.PublicDnsName
+  KeyPairId:
+    Description: 'ID of the created key pair'
+    Value: !Ref NewKeyPair
