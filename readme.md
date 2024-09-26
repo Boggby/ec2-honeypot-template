@@ -1,0 +1,1 @@
+The idea is to create a simple, reusable CloudFormation template that will create the infrastructure required for the DShield honeypot.
