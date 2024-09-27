@@ -9,7 +9,7 @@ Parameters:
   AdminIpRange:
     Description: The IP address range that can be used to SSH to the EC2 instances
     Type: String
-    Default: 198.38.54.0/24
+    Default: 0.0.0.0/0
 
 Mappings:
   RegionMap:
