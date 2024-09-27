@@ -1,0 +1,163 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation template for a configurable EC2 instance, designed for DShield honeypot deployment'
+
+# This template creates an EC2 instance suitable for running a DShield honeypot.
+# It's designed to be flexible and reusable, allowing customization of various aspects of the instance.
+# 
+# Usage:
+# 1. Ensure you have the necessary permissions to create EC2 instances, Security Groups, and Key Pairs.
+# 2. Choose appropriate values for the parameters when launching the stack.
+# 3. After creation, retrieve the private key from the stack outputs and save it securely.
+# 4. Use the public IP or DNS to connect to your instance and set up the DShield honeypot.
+# 5. After setup, consider restricting the Security Group rules for enhanced security.
+
+Parameters:
+  AWSRegion:
+    Description: The AWS region in which to create the EC2 instance
+    Type: String
+    Default: us-east-2
+    AllowedValues:
+      - us-east-1
+      - us-east-2
+      - us-west-1
+      - us-west-2
+    ConstraintDescription: must be a valid AWS region.
+  VpcId:
+    Description: ID of the VPC (Virtual Private Cloud) to use
+    Type: AWS::EC2::VPC::Id
+  SubnetId:
+    Description: ID of the Subnet to launch the instance into
+    Type: AWS::EC2::Subnet::Id
+  SSHLocation:
+    Description: The IP address range that can be used to SSH to the EC2 instances (initially open, to be restricted after DShield installation)
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t2.medium
+    ConstraintDescription: must be a valid EC2 instance type.
+  AMIId:
+    Description: AMI ID for the EC2 instance (default is Ubuntu 22.04 LTS in us-east-2)
+    Type: AWS::EC2::Image::Id
+    Default: ami-0a695f0d95cefc163
+  VolumeSize:
+    Description: The size of the EBS volume in gigabytes
+    Type: Number
+    Default: 8
+    MinValue: 8
+    MaxValue: 30
+    ConstraintDescription: must be between 8 and 30 GB for free tier eligibility.
+  InstanceName:
+    Description: Name tag for the EC2 instance
+    Type: String
+    Default: DShield-Honeypot
+
+Resources:
+  # The main EC2 instance that will run the DShield honeypot
+  EC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Description: EC2 instance for DShield honeypot
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref AMIId
+      KeyName: !Ref EC2KeyPair
+      AvailabilityZone: !Select 
+        - 0
+        - !GetAZs 
+          Ref: AWS::Region
+      NetworkInterfaces: 
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - !Ref EC2SecurityGroup
+          SubnetId: !Ref SubnetId
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref VolumeSize
+            VolumeType: gp2
+      Tags:
+        - Key: Name
+          Value: !Ref InstanceName
+
+  # Key pair for SSH access to the instance
+  EC2KeyPair:
+    Type: AWS::EC2::KeyPair
+    Description: Key pair for secure access to the EC2 instance
+    Properties:
+      KeyName: !Sub '${AWS::StackName}-keypair'
+
+  # Security group initially allowing all inbound traffic
+  # This should be adjusted after DShield setup for better security
+  EC2SecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Description: Security group allowing all inbound traffic for DShield honeypot (to be adjusted after setup)
+    Properties:
+      VpcId: !Ref VpcId
+      GroupDescription: Security group for DShield honeypot EC2 instance
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+
+Outputs:
+  # These outputs provide important information about the created resources
+  InstanceId:
+    Description: ID of the EC2 instance
+    Value: !Ref EC2Instance
+  PublicDNS:
+    Description: Public DNS name of the EC2 instance
+    Value: !GetAtt EC2Instance.PublicDnsName
+  PublicIP:
+    Description: Public IP address of the EC2 instance
+    Value: !GetAtt EC2Instance.PublicIp
+  KeyPairName:
+    Description: Name of the Key Pair
+    Value: !Ref EC2KeyPair
+  KeyPairSecret:
+    Description: Private key of the new key pair (Sensitive Information)
+    Value: !GetAtt EC2KeyPair.PrivateKey
+  SecurityGroupId:
+    Description: ID of the created Security Group
+    Value: !Ref EC2SecurityGroup
+
+  # Note: Make sure to save the KeyPairSecret value securely as it won't be accessible after stack creation
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Network Configuration"
+        Parameters:
+          - VpcId
+          - SubnetId
+          - SSHLocation
+      - Label:
+          default: "EC2 Instance Configuration"
+        Parameters:
+          - InstanceType
+          - AMIId
+          - VolumeSize
+          - InstanceName
+    ParameterLabels:
+      VpcId:
+        default: "Which VPC should this be deployed to?"
+      SubnetId:
+        default: "Which subnet should this be deployed in?"
+      SSHLocation:
+        default: "Where can SSH access come from? (Initially open, restrict after setup)"
