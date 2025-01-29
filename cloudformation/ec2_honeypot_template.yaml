@@ -2,15 +2,11 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: 'CloudFormation template for creating a free tier eligible EC2 instance with two security groups'
 
 Parameters:
-  KeyPairName:
-    Description: Name of the EC2 KeyPair to be created
-    Type: String
-    Default: KeyPairName
   AdminIpRange:
     Description: The IP address range that can be used to SSH to the EC2 instances
     Type: String
-    Default: 0.0.0.0/0
-
+    Default: 10.0.0.1/32 #replace `10.0.0.1/32` with the IP range you want to allow SSH access from. The default value is an RFC 1918 address, failing to update it will leave your EC2 instance inaccessible.
+    
 Mappings:
   RegionMap:
     us-east-1:
@@ -22,8 +18,6 @@ Mappings:
 Resources:
   HoneypotKeyPair:
     Type: AWS::EC2::KeyPair
-    Properties:
-      KeyName: !Ref KeyPairName
 
   HoneypotInstance:
     Type: AWS::EC2::Instance
@@ -51,7 +45,7 @@ Resources:
       GroupDescription: Enable SSH access via port 22
       SecurityGroupIngress:
       - IpProtocol: tcp
-        FromPort: 22
+        FromPort: 22 # once the honeypot has been installed on this instance, the security group will need to be manually updated to port 12222
         ToPort: 22
         CidrIp: !Ref AdminIpRange
 
