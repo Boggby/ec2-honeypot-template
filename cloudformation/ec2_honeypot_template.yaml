@@ -5,7 +5,7 @@ Parameters:
   AdminIpRange:
     Description: The IP address range that can be used to SSH to the EC2 instances
     Type: String
-    Default: 10.0.0.1/32 #replace `10.0.0.1/32` with the IP range you want to allow SSH access from. The default value is an RFC 1918 address, failing to update it will leave your EC2 instance inaccessible.
+    Default: 203.0.113.0/24 #replace `203.0.113.0/24` with the IP range you want to allow SSH access from. The default value is an RFC 5735 address, failing to update it will leave your EC2 instance inaccessible.
     
 Mappings:
   RegionMap:
