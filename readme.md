@@ -46,7 +46,7 @@ The template creates an EC2 instance with two security groups: one for administr
 
 The `ec2_honeypot_template.yaml` template includes the following configurable parameter:
 
-- `AdminIpRange`: The IP address range that can be used to SSH to the EC2 instance (default: 10.0.0.1/32, the default was set an RFC 1918 address so that if someone forgets to update it, they don't have to worry about it being access by anyone else. This value to needs to be updated to the IP range you want to allow SSH access from)
+- `AdminIpRange`: The IP address range that can be used to SSH to the EC2 instance (default: 203.0.113.0/24, the default was set an RFC 5735 address so that if someone forgets to update it, they don't have to worry about it being accessed by anyone else. This value to needs to be updated to the IP range you want to allow SSH access from)
 
 You can modify this parameter during stack creation or update it later using the AWS Management Console or CLI.
 
