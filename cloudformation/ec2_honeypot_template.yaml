@@ -18,6 +18,8 @@ Mappings:
 Resources:
   HoneypotKeyPair:
     Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: honeypot-key-pair
 
   HoneypotInstance:
     Type: AWS::EC2::Instance
